@@ -4,7 +4,16 @@ from sklearn.preprocessing import minmax_scale, scale
 import numpy as np
 from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
-#read data and put it into an ordered list
+"""
+Feature engineering to extrapolate useful information out of
+proteins' primary structure. The features compute by this script can be used 
+to determine the sub-cellular location of proteins (see bioinfo_project.py)
+
+author: Giovanni Falcione
+bioinformatics assignment, Msc Machine Learning 16/17, UCL
+"""
+
+# read data and put it into an ordered list
 sequences = []
 labels = []
 blind_id = []
@@ -30,37 +39,31 @@ for seq_record in SeqIO.parse("blind.fasta.txt", "fasta", alphabet=generic_prote
     blind_id.append(seq_record.id)
     sequences.append(seq_record.seq)
 
-#create dictionary of amino acids
+# create dictionary of amino acids
 dict  = np.unique(sequences[0])
 
-#create the dictionary of di-peptides
+# create the dictionary of di-peptides
 dict_di = []
 for amino1 in dict:
     for amino2 in dict:
         dict_di.append(amino1+amino2)
 
 
-#in the sequences there are some X, B and others that I need to clean up
-
-# new_seq = []
-# for seq in sequences:
-#     seq = str(seq).replace('X', '')
-#     seq = str(seq).replace('B', 'D')
-#     new_seq.append(seq)
-
+# in the sequences there are some X, B and others that I need to clean up
 for seq in sequences:
     if 'X' in seq:
         sequences.remove(seq)
     if 'B' in seq:
         sequences.remove(seq)
 
-#for some reasons some X escape the first loop
+# for some reasons some X escape the first loop
 for seq in sequences:
     if 'X' in seq:
         sequences.remove(seq)
 
 n_train = len(sequences)
-# #count amino frequency, di-peptide frequency, mol. weight and length of sequences
+
+# compute amino frequency, di-peptide frequency and length of sequences
 freq = np.zeros((n_train, 20))
 di_freq = np.zeros((n_train,400))
 len_seq = np.zeros((n_train,1))
@@ -86,7 +89,8 @@ for seq in sequences:
 
     idxs +=1
 
-print len(sequences)
+# get molecular weight, isoeletric point, aromaticity 
+# and secondary structure percentage for each protein
 idxs = 0
 for seq in sequences:
     seq_pt = ProteinAnalysis(str(seq))
@@ -96,12 +100,13 @@ for seq in sequences:
     second_struct[idxs,:] = seq_pt.secondary_structure_fraction()
     idxs +=1
 
+# scale data
 len_seq = minmax_scale(len_seq)
 mol_weight = scale(mol_weight)
 iso_point = scale(iso_point)
 
 
-#compute amino frequency in first 50 positions
+# compute amino frequency in first 50 positions
 first20 = [item[:20] for item in sequences]
 freq_first20 = np.zeros((n_train, 20))
 
@@ -114,7 +119,7 @@ for seq in first20:
     idxs +=1
 
 
-#compute amino frequency in last 50 positions
+# compute amino frequency in last 50 positions
 last20 = [item[-20:] for item in sequences]
 freq_last20 = np.zeros((n_train, 20))
 
